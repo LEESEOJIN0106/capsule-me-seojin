@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /capsules/{capsuleId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == resource.data.uid;
+      }
+
+      function isValidCapsule(data) {
+        return data.keys().hasAll(['uid', 'to', 'letter', 'openAt', 'imageUrls', 'createdAt'])
+          && data.uid is string
+          && data.to is string
+          && data.letter is string
+          && data.openAt is timestamp
+          && data.imageUrls is list
+          && data.imageUrls.size() <= 20
+          && data.createdAt == request.time;
+      }
+
+      allow read: if isOwner();
+
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && isValidCapsule(request.resource.data);
+
+      allow update, delete: if isOwner()
+        && request.resource.data.uid == resource.data.uid
+        && isValidCapsule(request.resource.data);
+    }
+  }
+}

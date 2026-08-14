@@ -1,0 +1,16 @@
+{
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "캡슐 미",
+        "supportEmail": "xleeboy002@gmail.com"
+      }
+    }
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
