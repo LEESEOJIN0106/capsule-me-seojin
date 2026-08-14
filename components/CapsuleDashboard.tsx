@@ -44,13 +44,14 @@ export function CapsuleDashboard() {
       return;
     }
 
+    const uid = user.uid;
     let cancelled = false;
 
     async function load() {
       setLoading(true);
       setError("");
       try {
-        const items = await listCapsulesByUser(user.uid);
+        const items = await listCapsulesByUser(uid);
         if (!cancelled) setCapsules(items);
       } catch (err) {
         console.error(err);
