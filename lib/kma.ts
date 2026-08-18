@@ -102,7 +102,7 @@ async function kmaGet(
   const search = new URLSearchParams({
     serviceKey,
     pageNo: "1",
-    numOfRows: "60",
+    numOfRows: "100",
     dataType: "JSON",
     ...params,
   });
@@ -163,10 +163,14 @@ export async function getBurialWeather(input?: {
   );
 
   const skyItem = forecastItems.find((item) => item.category === "SKY");
+  const lightningValue = parseNumber(
+    forecastItems.find((item) => item.category === "LGT")?.fcstValue,
+  );
 
   const temperature = parseNumber(actual.T1H);
   const humidity = parseNumber(actual.REH);
   const windSpeed = parseNumber(actual.WSD);
+  const windDir = parseNumber(actual.VEC);
   const pty = actual.PTY ?? "0";
   const sky = skyItem?.fcstValue ?? "";
 
@@ -182,6 +186,8 @@ export async function getBurialWeather(input?: {
     humidity,
     rainfall: actual.RN1 || "0",
     windSpeed,
+    windDir,
+    lightning: lightningValue != null && lightningValue > 0,
     nx,
     ny,
     baseDate: ncst.baseDate,

@@ -78,10 +78,17 @@ export function fallbackLookFromWeather(input: {
   skyLabel?: string;
   precipLabel?: string;
   temperature?: number | null;
+  humidity?: number | null;
+  windSpeed?: number | null;
+  rainfall?: string;
+  lightning?: boolean;
 }): CapsuleLook {
   const precip = input.precipLabel ?? "없음";
   const sky = input.skyLabel ?? "맑음";
   const temperature = input.temperature;
+  const humidity = input.humidity ?? 0;
+  const wind = input.windSpeed ?? 0;
+  const rainMm = Number(String(input.rainfall ?? "").replace(/[^\d.]/g, "")) || 0;
 
   if (precip.includes("눈")) {
     return {
@@ -97,21 +104,49 @@ export function fallbackLookFromWeather(input: {
     };
   }
 
-  if (precip.includes("비") || precip.includes("빗")) {
+  if (input.lightning || rainMm >= 8 || (precip.includes("비") && wind >= 8)) {
+    return {
+      style: {
+        shape: "storm",
+        primary: "#3D4A66",
+        secondary: "#1A2233",
+        accent: "#C9D6F0",
+        mood: "요동",
+        title: "폭풍 캡슐",
+      },
+      keywords: ["폭풍", "요동", "속마음", "오늘"],
+    };
+  }
+
+  if (precip.includes("비") || precip.includes("빗") || rainMm > 0) {
     return {
       style: {
         shape: "rain",
-        primary: "#4C6F8F",
+        primary: rainMm >= 5 ? "#3A5874" : "#4C6F8F",
         secondary: "#1F3347",
         accent: "#9EC9E8",
-        mood: "촉촉",
-        title: "빗방울 캡슐",
+        mood: rainMm >= 5 ? "짙은" : "촉촉",
+        title: rainMm >= 5 ? "장맛비 캡슐" : "빗방울 캡슐",
       },
       keywords: ["비", "촉촉", "속마음", "오늘"],
     };
   }
 
-  if (sky === "흐림") {
+  if (wind >= 8) {
+    return {
+      style: {
+        shape: "wind",
+        primary: "#8FA9B8",
+        secondary: "#3E5A68",
+        accent: "#E6F1F4",
+        mood: "선선",
+        title: "바람 캡슐",
+      },
+      keywords: ["바람", "선선", "숨결", "오늘"],
+    };
+  }
+
+  if (sky === "흐림" || humidity >= 85) {
     return {
       style: {
         shape: "mist",
@@ -143,13 +178,27 @@ export function fallbackLookFromWeather(input: {
     return {
       style: {
         shape: "sun",
-        primary: "#F4B942",
+        primary: humidity >= 60 ? "#E08A3C" : "#F4B942",
         secondary: "#E07A2F",
         accent: "#FFF3C4",
-        mood: "따스",
+        mood: humidity >= 60 ? "후덥" : "따스",
         title: "햇살 캡슐",
       },
       keywords: ["햇살", "더위", "활기", "오늘"],
+    };
+  }
+
+  if (typeof temperature === "number" && temperature <= 5) {
+    return {
+      style: {
+        shape: "orb",
+        primary: "#D7E4F2",
+        secondary: "#6D86A0",
+        accent: "#F4F8FC",
+        mood: "서늘",
+        title: "찬공기 캡슐",
+      },
+      keywords: ["서늘", "공기", "기억", "오늘"],
     };
   }
 

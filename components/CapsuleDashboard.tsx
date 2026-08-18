@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { CapsuleCard } from "@/components/CapsuleCard";
+import { LiveWeather } from "@/components/CurrentWeather";
 import {
   getCapsuleStatus,
   listCapsulesByUser,
@@ -139,6 +140,10 @@ export function CapsuleDashboard() {
             처음으로
           </Link>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <LiveWeather variant="strip" />
       </div>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">

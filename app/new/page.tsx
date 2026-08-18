@@ -4,16 +4,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useAuth } from "@/components/AuthProvider";
+import { LoginModal } from "@/components/LoginModal";
 import { StyledCapsule } from "@/components/StyledCapsule";
+import { LiveWeather } from "@/components/CurrentWeather";
 import { WeatherBadge } from "@/components/WeatherBadge";
 import { fetchCapsuleLook, type CapsuleLook } from "@/lib/capsule-style";
+import {
+  clearCapsuleDraft,
+  readCapsuleDraft,
+  saveCapsuleDraft,
+} from "@/lib/capsule-draft";
 import { createCapsule, isFutureOpenAt, toDatetimeLocalValue } from "@/lib/capsules";
 import { storage } from "@/lib/firebase";
-import {
-  fetchBurialWeather,
-  getBrowserLocation,
-  type CapsuleWeather,
-} from "@/lib/weather";
+import { fetchCurrentWeather, type CapsuleWeather } from "@/lib/weather";
 
 type CapsuleResult = {
   capsuleId: string;
@@ -41,7 +44,7 @@ function formatOpenAt(value: string) {
 
 export default function NewPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, error, signIn } = useAuth();
   const [to, setTo] = useState("");
   const [letter, setLetter] = useState("");
   const [reason, setReason] = useState("");
@@ -53,6 +56,21 @@ export default function NewPage() {
   const [weather, setWeather] = useState<CapsuleWeather | null>(null);
   const [look, setLook] = useState<CapsuleLook | null>(null);
   const [result, setResult] = useState<CapsuleResult | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  useEffect(() => {
+    const draft = readCapsuleDraft();
+    if (!draft) return;
+    setTo(draft.to);
+    setLetter(draft.letter);
+    setReason(draft.reason);
+    setOpenAt(draft.openAt);
+    clearCapsuleDraft();
+  }, []);
+
+  useEffect(() => {
+    if (user && loginOpen) setLoginOpen(false);
+  }, [user, loginOpen]);
 
   useEffect(() => {
     const urls = files.map((file) => URL.createObjectURL(file));
@@ -66,7 +84,8 @@ export default function NewPage() {
     event.preventDefault();
 
     if (!user) {
-      alert("로그인 먼저!");
+      saveCapsuleDraft({ to, letter, reason, openAt });
+      setLoginOpen(true);
       return;
     }
 
@@ -83,8 +102,7 @@ export default function NewPage() {
     setBusy(true);
     setStatus("오늘의 날씨를 담는 중…");
     try {
-      const coords = await getBrowserLocation();
-      const nextWeather = await fetchBurialWeather(coords).catch(() => null);
+      const nextWeather = await fetchCurrentWeather().catch(() => null);
       setWeather(nextWeather);
 
       setStatus("날씨로 캡슐 모양을 빚는 중…");
@@ -105,7 +123,13 @@ export default function NewPage() {
   }
 
   async function handleBury() {
-    if (!user || !openAt) return;
+    if (!user) {
+      saveCapsuleDraft({ to, letter, reason, openAt });
+      setLoginOpen(true);
+      return;
+    }
+
+    if (!openAt) return;
 
     setBusy(true);
     setStatus("캡슐을 묻는 중…");
@@ -156,8 +180,8 @@ export default function NewPage() {
 
   if (result) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-amber-50 px-6 py-16">
-        <main className="w-full max-w-lg rounded-3xl border border-amber-100/80 bg-white/90 p-10 shadow-[0_20px_50px_-20px_rgba(120,80,40,0.25)]">
+      <div className="flex flex-1 items-center justify-center px-6 py-16">
+        <main className="w-full max-w-lg rounded-3xl border border-white/50 bg-white/80 p-10 shadow-[0_20px_50px_-20px_rgba(40,30,10,0.35)] backdrop-blur-md">
           <h1 className="text-center text-3xl font-semibold tracking-tight text-stone-800">
             결과
           </h1>
@@ -244,8 +268,8 @@ export default function NewPage() {
 
   if (look) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-amber-50 px-6 py-16">
-        <main className="relative w-full max-w-lg rounded-3xl border border-amber-100/80 bg-white/90 p-10 shadow-[0_20px_50px_-20px_rgba(120,80,40,0.25)]">
+      <div className="flex flex-1 items-center justify-center px-6 py-16">
+        <main className="relative w-full max-w-lg rounded-3xl border border-white/50 bg-white/80 p-10 shadow-[0_20px_50px_-20px_rgba(40,30,10,0.35)] backdrop-blur-md">
           {busy ? (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-white/80 backdrop-blur-sm">
               <p className="text-sm font-medium text-stone-700" aria-live="polite">
@@ -327,13 +351,19 @@ export default function NewPage() {
             </button>
           </div>
         </main>
+        <LoginModal
+          open={loginOpen}
+          error={error}
+          onClose={() => setLoginOpen(false)}
+          onSignIn={() => void signIn()}
+        />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-amber-50 px-6 py-16">
-      <main className="relative w-full max-w-lg rounded-3xl border border-amber-100/80 bg-white/90 p-10 shadow-[0_20px_50px_-20px_rgba(120,80,40,0.25)]">
+    <div className="flex flex-1 items-center justify-center px-6 py-16">
+      <main className="relative w-full max-w-lg rounded-3xl border border-white/50 bg-white/80 p-10 shadow-[0_20px_50px_-20px_rgba(40,30,10,0.35)] backdrop-blur-md">
         {busy ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-white/80 backdrop-blur-sm">
             <p className="text-sm font-medium text-stone-700" aria-live="polite">
@@ -345,6 +375,13 @@ export default function NewPage() {
         <h1 className="text-center text-3xl font-semibold tracking-tight text-stone-800">
           캡슐 묻기
         </h1>
+        <p className="mt-2 text-center text-sm text-stone-500">
+          지금 날씨와 위치가 캡슐에 함께 담겨요.
+        </p>
+
+        <div className="mt-6">
+          <LiveWeather />
+        </div>
 
         <form className="mt-8 space-y-5" onSubmit={handlePreview}>
           <label className="block text-left">
@@ -444,6 +481,12 @@ export default function NewPage() {
           </button>
         </form>
       </main>
+      <LoginModal
+        open={loginOpen}
+        error={error}
+        onClose={() => setLoginOpen(false)}
+        onSignIn={() => void signIn()}
+      />
     </div>
   );
 }

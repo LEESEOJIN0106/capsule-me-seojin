@@ -14,9 +14,25 @@ rules_version = '2';
 // - reason: string (why this capsule was buried)
 // - keywords: list<string>
 // - style: optional map (Gemini weather look)
+//
+// Document: stats/capsules
+// - count: number (public running total of buried capsules)
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /stats/capsules {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count is number
+        && request.resource.data.count == 1;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count'])
+        && request.resource.data.count is number
+        && request.resource.data.count == resource.data.count + 1;
+      allow delete: if false;
+    }
+
     match /capsules/{capsuleId} {
       function isOwner() {
         return request.auth != null && request.auth.uid == resource.data.uid;

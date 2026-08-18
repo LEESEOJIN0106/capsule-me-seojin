@@ -1,9 +1,13 @@
 import {
   addDoc,
   collection,
+  doc,
+  getDoc,
   getDocs,
+  increment,
   query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   where,
 } from "firebase/firestore";
@@ -90,6 +94,18 @@ export function isFutureOpenAt(value: Date | string, now = Date.now()) {
   return !Number.isNaN(date.getTime()) && date.getTime() > now;
 }
 
+const capsuleStatsRef = doc(db, "stats", "capsules");
+
+export async function getPublicCapsuleCount(): Promise<number> {
+  const snap = await getDoc(capsuleStatsRef);
+  const count = snap.data()?.count;
+  return typeof count === "number" && Number.isFinite(count) ? count : 0;
+}
+
+async function incrementPublicCapsuleCount() {
+  await setDoc(capsuleStatsRef, { count: increment(1) }, { merge: true });
+}
+
 export async function createCapsule(input: {
   uid: string;
   to: string;
@@ -101,7 +117,7 @@ export async function createCapsule(input: {
   keywords?: string[];
   style?: CapsuleStyle | null;
 }) {
-  return addDoc(collection(db, "capsules"), {
+  const docRef = await addDoc(collection(db, "capsules"), {
     uid: input.uid,
     to: input.to,
     letter: input.letter,
@@ -113,6 +129,14 @@ export async function createCapsule(input: {
     ...(input.weather ? { weather: input.weather } : {}),
     ...(input.style ? { style: input.style } : {}),
   });
+
+  try {
+    await incrementPublicCapsuleCount();
+  } catch (error) {
+    console.error(error);
+  }
+
+  return docRef;
 }
 
 export async function listCapsulesByUser(uid: string): Promise<CapsuleListItem[]> {

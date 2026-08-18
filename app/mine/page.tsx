@@ -1,9 +1,12 @@
 import { CapsuleDashboard } from "@/components/CapsuleDashboard";
+import { WeatherShell } from "@/components/WeatherShell";
 
 export default function MinePage() {
   return (
-    <div className="flex flex-1 bg-amber-50">
-      <CapsuleDashboard />
-    </div>
+    <WeatherShell>
+      <div className="flex flex-1">
+        <CapsuleDashboard />
+      </div>
+    </WeatherShell>
   );
 }

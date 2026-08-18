@@ -51,10 +51,13 @@ function buildPrompt(input: {
     ? [
         `요약: ${input.weather.summary}`,
         `하늘: ${input.weather.skyLabel}`,
-        `강수: ${input.weather.precipLabel}`,
+        `강수: ${input.weather.precipLabel} (${input.weather.rainfall})`,
         `기온: ${input.weather.temperature ?? "모름"}℃`,
         `습도: ${input.weather.humidity ?? "모름"}%`,
         `바람: ${input.weather.windSpeed ?? "모름"}m/s`,
+        `풍향: ${input.weather.windDir ?? "모름"}`,
+        `번개: ${input.weather.lightning ? "있음" : "없음"}`,
+        `위치: ${input.weather.placeName || (input.weather.locationSource === "gps" ? "현재 위치" : "서울")}`,
       ].join("\n")
     : "날씨 정보 없음";
 
