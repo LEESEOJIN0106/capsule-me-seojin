@@ -8,6 +8,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import type { CapsuleStyle } from "@/lib/capsule-style";
+import type { CapsuleWeather } from "@/lib/weather";
 
 export type CapsuleData = {
   uid: string;
@@ -25,6 +27,10 @@ export type CapsuleListItem = {
   openAt: Timestamp;
   imageUrls: string[];
   createdAt: Timestamp | null;
+  weather: CapsuleWeather | null;
+  reason: string;
+  keywords: string[];
+  style: CapsuleStyle | null;
 };
 
 export type CapsuleStatus = "locked" | "open";
@@ -90,6 +96,10 @@ export async function createCapsule(input: {
   letter: string;
   openAt: Date;
   imageUrls: string[];
+  weather?: CapsuleWeather | null;
+  reason?: string;
+  keywords?: string[];
+  style?: CapsuleStyle | null;
 }) {
   return addDoc(collection(db, "capsules"), {
     uid: input.uid,
@@ -98,6 +108,10 @@ export async function createCapsule(input: {
     openAt: Timestamp.fromDate(input.openAt),
     imageUrls: input.imageUrls,
     createdAt: serverTimestamp(),
+    reason: input.reason ?? "",
+    keywords: input.keywords ?? [],
+    ...(input.weather ? { weather: input.weather } : {}),
+    ...(input.style ? { style: input.style } : {}),
   });
 }
 
@@ -115,6 +129,12 @@ export async function listCapsulesByUser(uid: string): Promise<CapsuleListItem[]
       openAt: data.openAt as Timestamp,
       imageUrls: Array.isArray(data.imageUrls) ? data.imageUrls : [],
       createdAt: (data.createdAt as Timestamp | undefined) ?? null,
+      weather: (data.weather as CapsuleWeather | undefined) ?? null,
+      reason: typeof data.reason === "string" ? data.reason : "",
+      keywords: Array.isArray(data.keywords)
+        ? data.keywords.filter((item: unknown) => typeof item === "string")
+        : [],
+      style: (data.style as CapsuleStyle | undefined) ?? null,
     };
   });
 

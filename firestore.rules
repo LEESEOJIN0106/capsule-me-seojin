@@ -1,5 +1,20 @@
 rules_version = '2';
 
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+// Collection: capsules/{capsuleId}
+// - uid: string (owner Firebase Auth uid)
+// - to: string
+// - letter: string
+// - openAt: timestamp
+// - imageUrls: list<string> (max 20)
+// - createdAt: timestamp (server time on create)
+// - weather: optional map (KMA snapshot at burial)
+// - reason: string (why this capsule was buried)
+// - keywords: list<string>
+// - style: optional map (Gemini weather look)
+
 service cloud.firestore {
   match /databases/{database}/documents {
     match /capsules/{capsuleId} {
@@ -7,15 +22,88 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == resource.data.uid;
       }
 
+      function isValidWeather(weather) {
+        return weather is map
+          && weather.keys().hasOnly([
+            'summary',
+            'skyLabel',
+            'precipLabel',
+            'temperature',
+            'humidity',
+            'rainfall',
+            'windSpeed',
+            'nx',
+            'ny',
+            'baseDate',
+            'baseTime',
+            'locationSource',
+            'placeName',
+            'lat',
+            'lng'
+          ])
+          && weather.summary is string
+          && weather.skyLabel is string
+          && weather.precipLabel is string
+          && (weather.temperature is number || weather.temperature == null)
+          && (weather.humidity is number || weather.humidity == null)
+          && weather.rainfall is string
+          && (weather.windSpeed is number || weather.windSpeed == null)
+          && weather.nx is number
+          && weather.ny is number
+          && weather.baseDate is string
+          && weather.baseTime is string
+          && weather.locationSource in ['gps', 'fallback']
+          && (!('placeName' in weather) || weather.placeName is string)
+          && (!('lat' in weather) || weather.lat is number || weather.lat == null)
+          && (!('lng' in weather) || weather.lng is number || weather.lng == null);
+      }
+
+      function isValidStyle(style) {
+        return style is map
+          && style.keys().hasOnly([
+            'shape',
+            'primary',
+            'secondary',
+            'accent',
+            'mood',
+            'title'
+          ])
+          && style.shape in ['sun', 'cloud', 'rain', 'snow', 'wind', 'storm', 'mist', 'orb']
+          && style.primary is string
+          && style.secondary is string
+          && style.accent is string
+          && style.mood is string
+          && style.title is string;
+      }
+
       function isValidCapsule(data) {
         return data.keys().hasAll(['uid', 'to', 'letter', 'openAt', 'imageUrls', 'createdAt'])
+          && data.keys().hasOnly([
+            'uid',
+            'to',
+            'letter',
+            'openAt',
+            'imageUrls',
+            'createdAt',
+            'weather',
+            'reason',
+            'keywords',
+            'style'
+          ])
           && data.uid is string
           && data.to is string
           && data.letter is string
           && data.openAt is timestamp
           && data.imageUrls is list
           && data.imageUrls.size() <= 20
-          && data.createdAt == request.time;
+          && data.createdAt == request.time
+          && (!('reason' in data) || (data.reason is string && data.reason.size() <= 500))
+          && (!('keywords' in data) || (
+            data.keywords is list
+            && data.keywords.size() <= 8
+          ))
+          && (!('weather' in data) || isValidWeather(data.weather))
+          && (!('style' in data) || isValidStyle(data.style));
       }
 
       allow read: if isOwner();

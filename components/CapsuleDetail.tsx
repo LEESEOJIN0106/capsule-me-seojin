@@ -10,17 +10,33 @@ import {
   getDaysUntilOpen,
 } from "@/lib/capsules";
 import { db } from "@/lib/firebase";
+import type { CapsuleStyle } from "@/lib/capsule-style";
+import type { CapsuleWeather } from "@/lib/weather";
+import { StyledCapsule } from "@/components/StyledCapsule";
+import { WeatherBadge } from "@/components/WeatherBadge";
 
 type CapsuleDoc = {
   to: string;
   letter: string;
   openAt: Timestamp;
   imageUrls: string[];
+  weather: CapsuleWeather | null;
+  reason: string;
+  keywords: string[];
+  style: CapsuleStyle | null;
 };
 
 function CapsuleContent({ capsule }: { capsule: CapsuleDoc }) {
   return (
     <>
+      {capsule.reason ? (
+        <div>
+          <p className="text-xs font-medium text-stone-400">묻은 이유</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">
+            {capsule.reason}
+          </p>
+        </div>
+      ) : null}
       <div>
         <p className="text-xs font-medium text-stone-400">편지</p>
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">
@@ -76,6 +92,12 @@ export function CapsuleDetail({ id }: { id: string }) {
           letter: data.letter ?? "",
           openAt: data.openAt,
           imageUrls: Array.isArray(data.imageUrls) ? data.imageUrls : [],
+          weather: (data.weather as CapsuleWeather | undefined) ?? null,
+          reason: typeof data.reason === "string" ? data.reason : "",
+          keywords: Array.isArray(data.keywords)
+            ? data.keywords.filter((item: unknown) => typeof item === "string")
+            : [],
+          style: (data.style as CapsuleStyle | undefined) ?? null,
         });
       } catch (err) {
         console.error(err);
@@ -138,6 +160,31 @@ export function CapsuleDetail({ id }: { id: string }) {
         </p>
       </div>
 
+      {capsule.style ? (
+        <div className="rounded-3xl border border-stone-100 bg-white/70 px-4 py-6">
+          <StyledCapsule style={capsule.style} />
+          <p className="mt-3 text-center text-sm font-medium text-stone-800">
+            {capsule.style.title}
+          </p>
+          <p className="mt-1 text-center text-xs text-stone-500">
+            {capsule.style.mood}
+          </p>
+        </div>
+      ) : null}
+
+      {capsule.keywords.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {capsule.keywords.map((keyword) => (
+            <span
+              key={keyword}
+              className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-900"
+            >
+              #{keyword}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
       {!canViewContent ? (
         <div className="rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-5 text-center">
           <p className="text-sm font-semibold text-stone-800">아직 기한이 남았어요</p>
@@ -175,6 +222,8 @@ export function CapsuleDetail({ id }: { id: string }) {
           {formatCapsuleDate(capsule.openAt)}
         </p>
       </div>
+
+      {capsule.weather ? <WeatherBadge weather={capsule.weather} /> : null}
 
       <Link
         href="/mine"

@@ -24,3 +24,68 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.capsule-fx {
+  pointer-events: none;
+  position: absolute;
+  inset: 8%;
+  overflow: hidden;
+}
+
+.capsule-fx-rain i,
+.capsule-fx-snow i {
+  position: absolute;
+  top: -12%;
+  width: 2px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  animation: capsule-fall 1.4s linear infinite;
+}
+
+.capsule-fx-rain i:nth-child(odd) { left: 18%; }
+.capsule-fx-rain i:nth-child(even) { left: 62%; }
+.capsule-fx-rain i:nth-child(3) { left: 34%; }
+.capsule-fx-rain i:nth-child(4) { left: 78%; }
+.capsule-fx-rain i:nth-child(5) { left: 48%; }
+.capsule-fx-rain i:nth-child(6) { left: 10%; }
+.capsule-fx-rain i:nth-child(7) { left: 88%; }
+.capsule-fx-rain i:nth-child(8) { left: 56%; }
+
+.capsule-fx-snow i {
+  width: 5px;
+  height: 5px;
+  background: #fff;
+  animation-duration: 2.4s;
+}
+
+.capsule-fx-sun {
+  position: absolute;
+  inset: 6%;
+  border-radius: 999px;
+  box-shadow: 0 0 28px 10px currentColor;
+  animation: capsule-pulse 2.4s ease-in-out infinite;
+}
+
+.capsule-fx-wind {
+  position: absolute;
+  inset: 30% 10%;
+  border-top: 2px solid rgba(255, 255, 255, 0.55);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+  animation: capsule-drift 1.8s ease-in-out infinite;
+}
+
+@keyframes capsule-fall {
+  from { transform: translateY(0); opacity: 0.9; }
+  to { transform: translateY(120px); opacity: 0; }
+}
+
+@keyframes capsule-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes capsule-drift {
+  0%, 100% { transform: translateX(-6px); }
+  50% { transform: translateX(8px); }
+}
